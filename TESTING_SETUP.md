@@ -4,22 +4,22 @@ This document explains how to set up and run tests for MapLibre GL JS in environ
 
 ## Problem
 
-The MapLibre GL JS test suite requires Chrome for integration and render tests. By default, Puppeteer tries to download Chrome during `npm install`, which may fail in restricted network environments.
+The MapLibre GL JS test suite requires Chrome for integration and render tests. In containerized environments, Puppeteer's Chrome may require special sandbox configuration to run properly.
 
 ## Solution
 
 This repository has been configured to:
 
-1. Skip Puppeteer's Chrome download during installation
-2. Use the system's installed Chrome/Chromium browser for tests
+1. Allow Puppeteer to download Chrome during installation (when network access is available)
+2. Use the --no-sandbox flag for Chrome in containerized environments
 
 ## Setup Instructions
 
 ### 1. Install Dependencies
 
 ```bash
-# Skip Puppeteer browser download
-PUPPETEER_SKIP_DOWNLOAD=true npm install
+# Puppeteer will download Chrome automatically
+npm install
 ```
 
 ### 2. Build the Project
@@ -108,14 +108,15 @@ npm test
 
 ### 1. Puppeteer Configuration
 
-Modified `test/integration/lib/puppeteer_config.ts` to use system Chrome:
+Modified `test/integration/lib/puppeteer_config.ts` to add sandbox flags for containerized environments:
 
 ```typescript
 export async function launchPuppeteer(headless = true): Promise<Browser> {
     return puppeteer.launch({
         headless,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
         args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
             '--disable-gpu',
             '--enable-features=AllowSwiftShaderFallback,AllowSoftwareGLFallbackDueToCrashes',
             '--enable-unsafe-swiftshader'
@@ -157,15 +158,17 @@ Error: Could not find Chrome (ver. X.X.X)
 ```
 
 Solution:
-1. Install Chrome/Chromium on your system
-2. Update the `executablePath` in `test/integration/lib/puppeteer_config.ts` to match your Chrome installation path
+1. Ensure `npm install` completed successfully and Puppeteer downloaded Chrome
+2. Check `~/.cache/puppeteer` or `node_modules/puppeteer/.local-chromium` for the Chrome installation
 
 ### Tests Timeout
 
-Some browser integration tests may timeout. This is a known issue being investigated. The workaround is to run specific test suites individually:
+Some browser integration tests may timeout due to loading external map styles. The workaround is to run specific test suites individually:
 
 ```bash
-npm run test-integration -- shaping  # This works
+npm run test-integration -- shaping  # Works: 17 tests
+npm run test-integration -- query    # Works: 133 tests
+npm run test-integration -- browser  # Still investigating timeout issues
 ```
 
 ### xvfb Error on Linux
@@ -195,14 +198,17 @@ Example GitHub Actions workflow:
 - name: Install dependencies
   run: |
     sudo apt-get update
-    sudo apt-get install -y xvfb google-chrome-stable
-    PUPPETEER_SKIP_DOWNLOAD=true npm install
+    sudo apt-get install -y xvfb
+    npm install
 
 - name: Build
   run: npm run build-dist
 
 - name: Run quick tests
   run: ./run-quick-tests.sh
+
+- name: Run integration tests
+  run: npm run test-integration
 
 - name: Run render tests
   run: xvfb-run -a npm run test-render
@@ -211,6 +217,6 @@ Example GitHub Actions workflow:
 
 ## Summary
 
-With these changes, you can successfully run the MapLibre GL JS test suite in restricted network environments by using the system's Chrome installation instead of Puppeteer's bundled Chrome.
+With these changes, you can successfully run the MapLibre GL JS test suite with Puppeteer's Chrome in containerized environments.
 
-The quick test suite (linting, unit tests, build tests, symbol shaping) completes in 3-5 minutes and provides good test coverage for rapid development. The full render test suite takes 50+ minutes but can be run when comprehensive visual regression testing is needed.
+The quick test suite (linting, unit tests, build tests) completes in 3-5 minutes. Integration tests (shaping and query) add another ~30 seconds with 150 additional tests. The full render test suite takes 50+ minutes but can be run when comprehensive visual regression testing is needed.

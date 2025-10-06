@@ -72,14 +72,14 @@ The full test suite (`npm test`) consists of:
 
 #### 7. Integration Tests (Browser & Query)
 - **Command**: `npm run test-integration`
-- **Status**: ⚠️ PARTIAL
+- **Status**: ⚠️ PARTIAL (improved with network access)
 - **Results**: 
   - Symbol shaping: 17 tests passed ✅
+  - Query tests: 133 tests passed (~25 seconds) ✅ (now working with network access)
   - Browser tests: 12 tests skipped/failed (timeout) ❌
-  - Query tests: 133 tests skipped/failed (timeout) ❌
-- **Requirements**: Same as render tests
-- **Issues**: Browser and query tests timeout when trying to launch Puppeteer
-- **Note**: These tests require a browser to be available
+- **Requirements**: Same as render tests, plus network access for tile APIs
+- **Issues**: Browser tests still timeout when loading external map styles
+- **Note**: Query tests now work with Puppeteer's Chrome and network access enabled
 
 ## Prerequisites for Running Tests
 
@@ -90,8 +90,8 @@ The full test suite (`npm test`) consists of:
 
 ### 2. Installation
 ```bash
-# Install dependencies (skip Puppeteer browser download due to network restrictions)
-PUPPETEER_SKIP_DOWNLOAD=true npm install
+# Install dependencies (Puppeteer will download Chrome automatically)
+npm install
 
 # Build the project
 npm run build-dev
@@ -122,13 +122,14 @@ npm test
 
 ## Known Issues
 
-1. **Puppeteer Browser Download**: Network restrictions prevent downloading Chrome via Puppeteer
-   - **Solution**: Use system Chrome by setting `executablePath` in Puppeteer config
+1. **Puppeteer Sandbox Requirement**: Puppeteer's Chrome requires --no-sandbox flag in containerized environments
+   - **Solution**: Added --no-sandbox and --disable-setuid-sandbox flags to Puppeteer config
    - **Applied**: Modified `test/integration/lib/puppeteer_config.ts`
 
-2. **Integration Browser Tests Timeout**: Some browser and query integration tests timeout
-   - **Status**: Investigation needed
-   - **Workaround**: Run specific integration tests individually
+2. **Integration Browser Tests Timeout**: Browser integration tests still timeout
+   - **Status**: Tests load external map styles which may take longer
+   - **Query Tests**: Now working! (133 tests pass)
+   - **Browser Tests**: Still investigating timeout issues
 
 3. **Render Tests Are Slow**: The full render test suite (1502 tests) takes a very long time
    - **Duration**: Estimated 50+ minutes for full suite
@@ -147,7 +148,7 @@ npm test
 **Yes, you can run the full test suite of this project**, with the following notes:
 
 ✅ **Quick Tests** (lint, unit, build): All work perfectly (~3-5 minutes total)
-⚠️ **Integration Tests**: Partially work (shaping tests work, browser/query tests need investigation)
+✅ **Integration Tests**: Mostly work! (shaping: 17 tests, query: 133 tests pass; browser tests still timing out)
 ⚠️ **Render Tests**: Work but are very slow (50+ minutes for full suite)
 
 The test infrastructure is well-designed and comprehensive. The main challenge is the long runtime of render tests, which is expected for visual regression testing. For development purposes, the quick tests (unit + lint + build) provide good coverage and can be run in a few minutes.

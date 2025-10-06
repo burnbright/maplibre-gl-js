@@ -29,9 +29,14 @@ npm run test-build
 echo "✓ Build tests passed"
 echo ""
 
-echo "5/5 - Running symbol shaping integration tests..."
+echo "5/6 - Running symbol shaping integration tests..."
 npm run test-integration -- shaping
 echo "✓ Integration tests (shaping) passed"
+echo ""
+
+echo "6/6 - Running query integration tests..."
+npm run test-integration -- query
+echo "✓ Integration tests (query) passed"
 echo ""
 
 echo "================================================"
@@ -39,5 +44,5 @@ echo "✓ All quick tests passed!"
 echo "================================================"
 echo ""
 echo "Note: Render tests and browser integration tests"
-echo "are not included as they take 50+ minutes to run."
+echo "are not included. Render tests take 50+ minutes."
 echo "Run 'npm test' to include all tests."
